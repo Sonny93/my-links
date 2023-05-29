@@ -36,15 +36,6 @@ export default function SideMenu({
           handleSelectCategory={handleSelectCategory}
         />
       </BlockWrapper>
-      <BlockWrapper>
-        <MenuControls
-          categoryActive={categoryActive}
-          openSearchModal={openSearchModal}
-        />
-      </BlockWrapper>
-      <BlockWrapper>
-        <UserCard />
-      </BlockWrapper>
     </div>
   );
 }

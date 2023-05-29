@@ -23,9 +23,9 @@
 }
 
 .links-wrapper {
+  grid-area: 2 / 2 / 3 / 3;
   height: 100%;
   min-width: 0;
-  padding: 10px;
   display: flex;
   flex: 1;
   flex-direction: column;

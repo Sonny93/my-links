@@ -1,11 +1,11 @@
 @import "styles/colors.scss";
 
 .side-menu {
+  grid-area: 2 / 1 / 3 / 2;
   height: 100%;
-  width: 325px;
-  padding: 0 25px 0 10px;
+  padding-right: 1em;
   border-right: 1px solid $lightest-grey;
-  margin-right: 15px;
+  margin-right: 1em;
   display: flex;
   align-items: center;
   flex-direction: column;
