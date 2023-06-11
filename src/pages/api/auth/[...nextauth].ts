@@ -1,122 +1,37 @@
-import { PrismaClient } from "@prisma/client";
-import PATHS from "constants/paths";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
-const prisma = new PrismaClient();
+import PATHS from "constants/paths";
+import { MAX_AGE } from "constants/session";
+import getUserByEmail from "lib/user/getUserByEmail";
+import prisma from "utils/prisma";
 
-// TODO: refactor auth
 export const authOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code",
-        },
-      },
     }),
   ],
   callbacks: {
-    async session({ session }) {
-      // check if stored in session still exist in db
-      await prisma.user.findFirstOrThrow({
-        where: { email: session.user.email },
-      });
-      return session;
-    },
-    async signIn({ account: accountParam, profile }) {
-      console.log(
-        "[AUTH]",
-        "User",
-        profile.name,
-        profile.sub,
-        "attempt to log in with",
-        accountParam.provider
-      );
-      if (accountParam.provider !== "google") {
-        console.log("[AUTH]", "User", profile.name, "rejeced : bad provider");
-        return (
-          PATHS.LOGIN +
-          "?error=" +
-          encodeURI("Authentitifcation via Google requise")
-        );
-      }
+    async signIn({ profile }) {
+      const user = await getUserByEmail(profile.email);
+      const accountCount = await prisma.user.count();
 
-      const email = profile?.email;
-      if (email === "") {
-        console.log("[AUTH]", "User", profile.name, "rejeced : missing email");
-        return (
-          PATHS.LOGIN +
-          "?error=" +
-          encodeURI(
-            "Impossible de récupérer l'email associé à ce compte Google"
-          )
-        );
-      }
-      const googleId = profile?.sub;
-      if (googleId === "") {
+      if (!user && accountCount > 0) {
+        // If user does not exist, authentication rejected
+        console.warn(`[AUTH] User ${profile.email} authentication rejected`);
+        return false;
+      } else if (user || (!user && accountCount === 0)) {
+        // No user in databse or user exist, authentication success
         console.log(
-          "[AUTH]",
-          "User",
-          profile.name,
-          "rejeced : missing google id"
+          `[AUTH] User ${profile.email} authentication ${
+            !user ? "success (created)" : "success"
+          }`
         );
-        return (
-          PATHS.LOGIN +
-          "?error=" +
-          encodeURI(
-            "Impossible de récupérer l'identifiant associé à ce compte Google"
-          )
-        );
-      }
-      try {
-        const account = await prisma.user.findFirst({
-          where: {
-            google_id: googleId,
-            email,
-          },
-        });
-        const accountCount = await prisma.user.count();
-        if (!account) {
-          if (accountCount === 0) {
-            await prisma.user.create({
-              data: {
-                email,
-                google_id: googleId,
-              },
-            });
-            return true;
-          }
-
-          console.log(
-            "[AUTH]",
-            "User",
-            profile.name,
-            "rejeced : not authorized"
-          );
-          return (
-            PATHS.LOGIN +
-            "?error=" +
-            encodeURI(
-              "Vous n'êtes pas autorisé à vous connecter avec ce compte Google"
-            )
-          );
-        } else {
-          console.log("[AUTH]", "User", profile.name, "success");
-          return true;
-        }
-      } catch (error) {
-        console.log("[AUTH]", "User", profile.name, "unhandled error");
-        console.error(error);
-        return (
-          PATHS.LOGIN +
-          "?error=" +
-          encodeURI("Une erreur est survenue lors de l'authentification")
-        );
+        return true;
       }
     },
   },
@@ -126,7 +41,7 @@ export const authOptions = {
     signOut: PATHS.LOGOUT,
   },
   session: {
-    maxAge: 60 * 60 * 6, // Session de 6 heures
+    maxAge: MAX_AGE,
   },
 } as NextAuthOptions;
 export default NextAuth(authOptions);
