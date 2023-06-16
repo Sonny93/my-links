@@ -6,8 +6,9 @@
   width: 100%;
   color: $black;
   background-color: $white;
+  padding: 0.5em 1em;
   border: 1px solid $lightest-grey;
-  padding: 7px 12px;
+  border-radius: 3px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -22,11 +23,15 @@
     }
   }
 
-  & button {
+  & a {
     cursor: pointer;
     color: $blue;
     display: flex;
     transition: 0.15s;
+
+    &.admin {
+      color: $red;
+    }
 
     &:hover {
       transform: scale(1.3);

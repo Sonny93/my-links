@@ -1,3 +1,4 @@
+import { User } from "@prisma/client";
 import { AnimatePresence } from "framer-motion";
 import { useRouter } from "next/router";
 import { useCallback, useMemo, useState } from "react";
@@ -25,6 +26,7 @@ import { withAuthentication } from "utils/session";
 interface HomePageProps {
   categories: Category[];
   currentCategory: Category | undefined;
+  user: User;
 }
 
 export default function HomePage(props: HomePageProps) {
@@ -142,7 +144,7 @@ export default function HomePage(props: HomePageProps) {
     <PageTransition className="App">
       {isMobile ? (
         <>
-          <UserCard />
+          <UserCard user={props.user} />
           <AnimatePresence>
             {mobileModal.isShowing && (
               <Modal close={mobileModal.close}>
@@ -162,6 +164,7 @@ export default function HomePage(props: HomePageProps) {
         </>
       ) : (
         <SideMenu
+          user={props.user}
           categories={categories}
           favorites={favorites}
           handleSelectCategory={handleSelectCategory}
@@ -210,6 +213,7 @@ export const getServerSideProps = withAuthentication(
     );
     return {
       props: {
+        user: JSON.parse(JSON.stringify(user)),
         session,
         categories: JSON.parse(JSON.stringify(categories)),
         currentCategory: currentCategory

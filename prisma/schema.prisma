@@ -54,6 +54,9 @@ model User {
   emailVerified DateTime?
   image         String?
 
+  is_admin              Boolean @default(false)
+  is_connection_allowed Boolean @default(false)
+
   categories Category[]
   links      Link[]
 

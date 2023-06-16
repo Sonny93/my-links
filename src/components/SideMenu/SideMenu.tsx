@@ -1,9 +1,10 @@
+import { User } from "@prisma/client";
 import { useHotkeys } from "react-hotkeys-hook";
 
 import BlockWrapper from "components/BlockWrapper/BlockWrapper";
 import Categories from "./Categories/Categories";
-import NavigationLinks from "./NavigationLinks";
 import Favorites from "./Favorites/Favorites";
+import NavigationLinks from "./NavigationLinks";
 import UserCard from "./UserCard/UserCard";
 
 import * as Keys from "constants/keys";
@@ -12,6 +13,7 @@ import { Category, Link } from "types";
 import styles from "./sidemenu.module.scss";
 
 export interface SideMenuProps {
+  user: User;
   categories: Category[];
   favorites: Link[];
   handleSelectCategory: (category: Category) => void;
@@ -21,6 +23,7 @@ export interface SideMenuProps {
 }
 
 export default function SideMenu({
+  user,
   categories,
   favorites,
   handleSelectCategory,
@@ -77,7 +80,7 @@ export default function SideMenu({
         />
       </BlockWrapper>
       <BlockWrapper>
-        <UserCard />
+        <UserCard user={user} />
       </BlockWrapper>
     </div>
   );
