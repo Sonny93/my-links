@@ -2,6 +2,7 @@ const PATHS = {
   LOGIN: "/login",
   LOGOUT: "/logout",
   HOME: "/",
+  ADMIN: "/admin",
   CATEGORY: {
     CREATE: "/category/create",
     EDIT: "/category/edit",
@@ -15,6 +16,9 @@ const PATHS = {
   API: {
     CATEGORY: "/api/category",
     LINK: "/api/link",
+    ADMIN: {
+      USER: "/api/admin/users",
+    },
   },
   NOT_FOUND: "/404",
   SERVER_ERROR: "/505",

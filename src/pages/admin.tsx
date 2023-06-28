@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-table";
 import { signOut } from "next-auth/react";
 import Image from "next/image";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import dayjs from "dayjs";
 import "dayjs/locale/fr";
@@ -17,6 +17,8 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import ButtonLink from "components/ButtonLink";
 import PageTransition from "components/PageTransition";
 
+import axios from "axios";
+import PATHS from "constants/paths";
 import prisma from "utils/prisma";
 import { withAuthentication } from "utils/session";
 import { formatDate, pluralize, serialize } from "utils/string";
@@ -32,7 +34,9 @@ interface AdminPageProps {
   sessions: Array<Session>;
   users: Array<User>;
 }
-export default function AdminPage({ sessions, users }: AdminPageProps) {
+export default function AdminPage(props: AdminPageProps) {
+  const [users, setUsers] = useState<User[]>(props.users);
+  const [sessions, setSessions] = useState<Session[]>(props.sessions);
   return (
     <PageTransition
       className="admin"
@@ -65,13 +69,39 @@ export default function AdminPage({ sessions, users }: AdminPageProps) {
           </li>
         </ul>
       </nav>
-      <UsersTable users={users} />
+      <UsersTable users={users} setUsers={setUsers} />
       <SessionsTable sessions={sessions} />
     </PageTransition>
   );
 }
 
-function UsersTable({ users }: { users: AdminPageProps["users"] }) {
+function UsersTable({
+  users,
+  setUsers,
+}: {
+  users: AdminPageProps["users"];
+  setUsers: any; // FIXME: react dispatch
+}) {
+  const handleToggleCanConnect = async (event, row) => {
+    event.preventDefault();
+    console.log(row);
+    axios
+      .put(PATHS.API.ADMIN.USER, {
+        user_id: row.id,
+        is_connection_allowed: !row.is_connection_allowed,
+      })
+      .then(({ data }) => {
+        console.log(data);
+        setUsers((_users: User[]) => {
+          const userIndex = users.findIndex((u) => u.id === row.id);
+          _users[userIndex] = {
+            ...data.user,
+          };
+          return [..._users];
+        });
+      })
+      .catch(console.error);
+  };
   const userTable = useReactTable({
     data: users,
     columns: [
@@ -94,7 +124,7 @@ function UsersTable({ users }: { users: AdminPageProps["users"] }) {
         ),
       }),
       usersColumnHelper.accessor("name", {
-        header: () => "Nom",
+        header: () => "Name",
       }),
       usersColumnHelper.accessor("email", {
         header: () => "Email",
@@ -109,20 +139,23 @@ function UsersTable({ users }: { users: AdminPageProps["users"] }) {
           ),
       }),
       usersColumnHelper.accessor("is_connection_allowed", {
-        header: () => "Connexion autorisée ?",
-        cell: (props) =>
-          props.getValue() ? (
-            <span style={{ color: "red" }}>Oui</span>
-          ) : (
-            <span style={{ color: "green" }}>Non</span>
-          ),
+        header: () => "Connection allowed?",
+        cell: (props) => (
+          <input
+            type="checkbox"
+            checked={props.getValue()}
+            onChange={(event) =>
+              handleToggleCanConnect(event, props.row.original)
+            }
+          />
+        ),
       }),
       usersColumnHelper.accessor("createdAt", {
-        header: () => "Création",
+        header: () => "Created at",
         cell: (props) => <PrintDate date={props.getValue()} />,
       }),
       usersColumnHelper.accessor("updatedAt", {
-        header: () => "MAJ",
+        header: () => "Updated at",
         cell: (props) => <PrintDate date={props.getValue()} />,
       }),
       usersColumnHelper.display({
@@ -130,9 +163,9 @@ function UsersTable({ users }: { users: AdminPageProps["users"] }) {
         header: () => "Actions",
         cell: () => (
           <>
-            <ButtonLink>Supprimer</ButtonLink>
+            <ButtonLink>Delete</ButtonLink>
             <br />
-            <ButtonLink>Modifier</ButtonLink>
+            <ButtonLink>Edit</ButtonLink>
           </>
         ),
       }),
@@ -156,7 +189,7 @@ function SessionsTable({ sessions }: { sessions: AdminPageProps["sessions"] }) {
         header: () => "#",
       }),
       sessionsColumnHelper.accessor("userId", {
-        header: () => "Utilisateur ID",
+        header: () => "User ID",
       }),
       sessionsColumnHelper.accessor("expires", {
         header: () => "Expiration",
@@ -175,7 +208,7 @@ function SessionsTable({ sessions }: { sessions: AdminPageProps["sessions"] }) {
       sessionsColumnHelper.display({
         id: "actions",
         header: () => "Actions",
-        cell: () => <ButtonLink>Supprimer</ButtonLink>,
+        cell: () => <ButtonLink>Delete</ButtonLink>,
       }),
     ],
     getCoreRowModel: getCoreRowModel(),

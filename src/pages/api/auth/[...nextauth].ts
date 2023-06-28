@@ -37,11 +37,17 @@ export const authOptions = {
     },
     async signIn({ profile }) {
       const user = await getUserByEmail(profile.email);
-      const accountCount = await prisma.user.count();
-      if (!user?.is_connection_allowed && accountCount > 1) {
+      if (!user) {
+        console.warn(
+          `[AUTH] User ${profile.email} authentication rejected (user does not exist)`
+        );
+        return false;
+      } else if (!user?.is_connection_allowed) {
         // If connection is not allowed, authentication is rejected
         // Admin must manually set "is_connection_allowed" to true if this is a new user
-        console.warn(`[AUTH] User ${profile.email} authentication rejected`);
+        console.warn(
+          `[AUTH] User ${profile.email} authentication rejected (not allowed to login)`
+        );
         return false;
       } else {
         // User exist and is allowed to connect, authentication success

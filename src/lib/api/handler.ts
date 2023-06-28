@@ -21,13 +21,16 @@ type ApiHandlerMethod = ({
 // This API Handler strongly inspired by
 // Source: https://jasonwatmore.com/next-js-13-middleware-for-authentication-and-error-handling-on-api-routes
 
-export function apiHandler(handler: {
-  get?: ApiHandlerMethod;
-  post?: ApiHandlerMethod;
-  put?: ApiHandlerMethod;
-  patch?: ApiHandlerMethod;
-  delete?: ApiHandlerMethod;
-}) {
+export function apiHandler(
+  handler: {
+    get?: ApiHandlerMethod;
+    post?: ApiHandlerMethod;
+    put?: ApiHandlerMethod;
+    patch?: ApiHandlerMethod;
+    delete?: ApiHandlerMethod;
+  },
+  { isAdminHandler }: { isAdminHandler?: boolean } = { isAdminHandler: false }
+) {
   return async (req: NextApiRequest, res: NextApiResponse) => {
     const method = req.method.toLowerCase();
     if (!handler[method])
@@ -38,6 +41,10 @@ export function apiHandler(handler: {
     try {
       const session = await getSession(req, res);
       const user = await getUserOrThrow(session);
+
+      if (isAdminHandler && !user.is_admin) {
+        throw new Error("Admin permissions required");
+      }
 
       await handler[method]({ req, res, session, user });
     } catch (err) {
